@@ -1,10 +1,7 @@
 from flask import Flask, render_template, request
 from datetime import datetime, timezone, timedelta
-cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
 
-
+app = Flask(__name__)
 
 @app.route("/")
 def index():
