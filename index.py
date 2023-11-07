@@ -1,13 +1,7 @@
-import firebase_admin
-from firebase_admin import credentials, firestore
-cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
-
-
 from flask import Flask, render_template, request
-
 from datetime import datetime, timezone, timedelta
+app = Flask(__name__)
+
 @app.route("/")
 def index():
     homepage = "<h1>黃子鑒Python網頁</h1>"
