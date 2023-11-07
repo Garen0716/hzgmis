@@ -1,0 +1,17 @@
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+cred = credentials.Certificate("serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+doc_ref = db.document("靜宜資管/tcyang")
+doc = doc_ref.get()
+result = doc.to_dict()
+print("文件內容為：{}".format(result))
+print("教師姓名："+result.get("name"))
+print("教師郵件：" + result["mail"])
+
+print(result["name"])
+print("{}老師的研究室{},電子郵件{}".format(result["name"],result["lab"],result["mail"]))
