@@ -1,7 +1,13 @@
-from flask import Flask, render_template, request
-from datetime import datetime, timezone, timedelta
-app = Flask(__name__)
+import firebase_admin
+from firebase_admin import credentials, firestore
+cred = credentials.Certificate("serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
+
+from flask import Flask, render_template, request
+
+from datetime import datetime, timezone, timedelta
 @app.route("/")
 def index():
     homepage = "<h1>黃子鑒Python網頁</h1>"
@@ -10,6 +16,7 @@ def index():
     homepage += "<a href=/welcome?nick=ZGHUANG>傳送使用者暱稱</a><br>"
     homepage += "<a href=/about>子鑒簡介網頁</a><br>"
     homepage += "<a href=/account>帳號密碼表單</a><br>"
+    homepage += "<br><a href=/read>人選之人演員名單</a><br>"
     return homepage
 
 @app.route("/mis")
