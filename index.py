@@ -46,14 +46,12 @@ def account():
         return render_template("account.html")
 @app.route("/read")
 def read():
-    Result = ""
-    db = firestore.client()
+    Result = ""     
     collection_ref = db.collection("靜宜資管")    
-    docs = collection_ref.get()    
+    docs = collection_ref.order_by("name", direction=firestore.Query.DESCENDING).get()    
     for doc in docs:         
         Result += "文件內容：{}".format(doc.to_dict()) + "<br>"    
     return Result
-
 
 #if __name__ == "__main__":
     #app.run()
