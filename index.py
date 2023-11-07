@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request
 from datetime import datetime, timezone, timedelta
+cred = credentials.Certificate("serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 app = Flask(__name__)
 
 @app.route("/")
@@ -43,12 +46,14 @@ def account():
         return render_template("account.html")
 @app.route("/read")
 def read():
-    Result = ""     
-    collection_ref = db.collection("人選之人─造浪者")    
-    docs = collection_ref.order_by("name", direction=firestore.Query.DESCENDING).get()    
+    Result = ""
+    db = firestore.client()
+    collection_ref = db.collection("靜宜資管")    
+    docs = collection_ref.get()    
     for doc in docs:         
         Result += "文件內容：{}".format(doc.to_dict()) + "<br>"    
     return Result
+
 
 #if __name__ == "__main__":
     #app.run()
