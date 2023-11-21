@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request
 from datetime import datetime, timezone, timedelta
 import firebase_admin
-from firebase_admin import credentials, firestore 
+from firebase_admin import credentials, firestore
+import requests 
+from bs4 import BeautifulSoup 
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
@@ -19,6 +21,7 @@ def index():
     homepage += "<a href=/account>帳號密碼表單</a><br>"
     homepage += "<br><a href=/books>圖書</a><br>"
     homepage += "<br><a href=/query>查詢</a><br>"
+    homepage += "<br><a href=/spider>spider</a><br>"
     return homepage
 
 @app.route("/mis")
@@ -87,6 +90,20 @@ def query():
         return Result
     else:
         return render_template("search.html")
+@app.route("/spider")
+def spider():
+    url = "https://www1.pu.edu.tw/~tcyang/course.html"
+    Data = requests.get(url)
+    Data.encoding="utf-8"
+    #print(Data.text)
+
+    sp = BeautifulSoup(Data.text, "html.parser")
+    result=sp.select(".team-box")
+    info=""
+    for x in result:
+        info += "<a href=" + x.find("a").get("href") + ">" + x.text + "</a><br>"
+        info += x.find("a").get("href")+"<br><br>"
+    return info
 
 if __name__ == "__main__": 
     app.run(debug=True)
