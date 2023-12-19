@@ -25,6 +25,7 @@ def index():
     homepage += "<br><a href=/movie>讀取開眼電影即將上映影片，寫入Firestore</a><br>"
     homepage += "<br><a href=/searchQ>search</a><br>"
     homepage += "<br><a href=/movie_rate>movie_rate</a><br>"
+    homepage += "<br><a href=/webhook3>webhook3</a><br>"
     return homepage
 
 @app.route("/mis")
@@ -222,15 +223,18 @@ def movie_rate():
         doc_ref = db.collection("電影含分級").document(movie_id)
         doc_ref.set(doc)
     return "近期上映電影已爬蟲及存檔完畢，網站最近更新日期為：" + lastUpdate
-@app.route("/webhook", methods=["POST"])
-def webhook():
+@app.route("/webhook3", methods=["POST"])
+def webhook3():
     # build a request object
     req = request.get_json(force=True)
     # fetch queryResult from json
     action =  req.get("queryResult").get("action")
-    msg =  req.get("queryResult").get("queryText")
-    info = "動作：" + action + "； 查詢內容：" + msg
-    return make_response(jsonify({"fulfillmentText": info}))
+    #msg =  req.get("queryResult").get("queryText")
+    #info = "動作：" + action + "； 查詢內容：" + msg
+    if (action == "rateChoice"):
+        rate =  req.get("queryResult").get("parameters").get("rate")
+        info = "我是楊子青開發的電影聊天機器人,您選擇的電影分級是：" + rate + "，相關電影：\n"
+
       
 
 
