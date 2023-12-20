@@ -2,14 +2,17 @@ from flask import Flask, render_template, request,make_response, jsonify
 from datetime import datetime, timezone, timedelta
 import firebase_admin
 from firebase_admin import credentials, firestore
-import requests 
+import requests,json
 from bs4 import BeautifulSoup 
+
+from flask_ngrok import run_with_ngrok
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 app = Flask(__name__)
 db = firestore.client()
 
+run_with_ngrok(app)
 
 @app.route("/")
 def index():
@@ -25,7 +28,7 @@ def index():
     homepage += "<br><a href=/movie>讀取開眼電影即將上映影片，寫入Firestore</a><br>"
     homepage += "<br><a href=/searchQ>search</a><br>"
     homepage += "<br><a href=/movie_rate>movie_rate</a><br>"
-    homepage += "<br><a href=/webhook3>webhook3</a><br>"
+    # homepage += "<br><a href=/webhook3>webhook3</a><br>"
     return homepage
 
 @app.route("/mis")
@@ -223,21 +226,101 @@ def movie_rate():
         doc_ref = db.collection("電影含分級").document(movie_id)
         doc_ref.set(doc)
     return "近期上映電影已爬蟲及存檔完畢，網站最近更新日期為：" + lastUpdate
-@app.route("/webhook3", methods=["POST"])
-def webhook3():
-    # build a request object
+# @app.route("/webhook3", methods=["POST"])
+# def webhook3():
+#     # build a request object
+#     req = request.get_json(force=True)
+#     # fetch queryResult from json
+#     action =  req.get("queryResult").get("action")
+#     #msg =  req.get("queryResult").get("queryText")
+#     #info = "動作：" + action + "； 查詢內容：" + msg
+#     if (action == "rateChoice"):
+#         rate =  req.get("queryResult").get("parameters").get("rate")
+#         info = "我是楊子青開發的電影聊天機器人,您選擇的電影分級是：" + rate + "，相關電影：\n"
+@app.route("/webhook6", methods=["POST"])
+def webhook6():
     req = request.get_json(force=True)
-    # fetch queryResult from json
-    action =  req.get("queryResult").get("action")
-    #msg =  req.get("queryResult").get("queryText")
-    #info = "動作：" + action + "； 查詢內容：" + msg
+    action =  req["queryResult"]["action"]
     if (action == "rateChoice"):
-        rate =  req.get("queryResult").get("parameters").get("rate")
-        info = "我是楊子青開發的電影聊天機器人,您選擇的電影分級是：" + rate + "，相關電影：\n"
+        rate =  req["queryResult"]["parameters"]["rate"]
+        info = "我是楊子青開發的電影聊天機器人，您選擇的電影分級是：" + rate + "，相關電影：\n"
 
+        db = firestore.client()
+        collection_ref = db.collection("電影含分級")
+        docs = collection_ref.get()
+        result = ""
+        for doc in docs:
+            dict = doc.to_dict()
+            if rate in dict["rate"]:
+                result += "片名：" + dict["title"] + "\n"
+                result += "介紹：" + dict["hyperlink"] + "\n\n"
+        info += result
+    elif (action == "MovieDetail"):
+        question =  req.get("queryResult").get("parameters").get("filmq")
+        keyword =  req.get("queryResult").get("parameters").get("any")
+        info = "我是楊子青開發的電影聊天機器人，您要查詢電影的" + question + "，關鍵字是：" + keyword + "\n\n"
+
+        if (question == "片名"):
+            db = firestore.client()
+            collection_ref = db.collection("電影含分級")
+            docs = collection_ref.get()
+            found = False
+            for doc in docs:
+                dict = doc.to_dict()
+                if keyword in dict["title"]:
+                    found = True 
+                    info += "片名：" + dict["title"] + "\n"
+                    info += "海報：" + dict["picture"] + "\n"
+                    info += "影片介紹：" + dict["hyperlink"] + "\n"
+                    info += "片長：" + dict["showLength"] + " 分鐘\n"
+                    info += "分級：" + dict["rate"] + "\n" 
+                    info += "上映日期：" + dict["showDate"] + "\n\n"
+            if not found:
+                info += "很抱歉，目前無符合這個關鍵字的相關電影喔"
+
+    elif (action == "Weather"):
+        city =  req.get("queryResult").get("parameters").get("city")
+        info = "為您查詢 " + city + " 最近36小時的天氣\n\n"
+
+        token = "CWA-C96C6DBB-B07D-4459-9B1F-9F7F9264B621"
+        url = "https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=" + token + "&format=JSON&locationName=" + str(city)
+        Data = requests.get(url)
+
+        sTime = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][0]["startTime"]
+        eTime = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][0]["endTime"]
+        Weather = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][0]["parameter"]["parameterName"]
+        Rain = json.loads(Data.text)["records"]["location"][0]["weatherElement"][1]["time"][0]["parameter"]["parameterName"]
+        Min = json.loads(Data.text)["records"]["location"][0]["weatherElement"][2]["time"][0]["parameter"]["parameterName"]
+        Max = json.loads(Data.text)["records"]["location"][0]["weatherElement"][4]["time"][0]["parameter"]["parameterName"]
+        CT = json.loads(Data.text)["records"]["location"][0]["weatherElement"][3]["time"][0]["parameter"]["parameterName"]
+        info += sTime + "～" + eTime + "\n"
+        info += Weather + "，降雨機率：" + str(Rain) + "%" + "，氣溫：" + str(Min) + "～" + str(Max) + "度，" + CT + "\n\n"
+
+
+        sTime = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][1]["startTime"]
+        eTime = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][1]["endTime"]
+        Weather = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][1]["parameter"]["parameterName"]
+        Rain = json.loads(Data.text)["records"]["location"][0]["weatherElement"][1]["time"][1]["parameter"]["parameterName"]
+        Min = json.loads(Data.text)["records"]["location"][0]["weatherElement"][2]["time"][1]["parameter"]["parameterName"]
+        Max = json.loads(Data.text)["records"]["location"][0]["weatherElement"][4]["time"][1]["parameter"]["parameterName"]
+        CT = json.loads(Data.text)["records"]["location"][0]["weatherElement"][3]["time"][1]["parameter"]["parameterName"]
+        info += sTime + "～" + eTime + "\n"
+        info += Weather + "，降雨機率：" + str(Rain) + "%" + "，氣溫：" + str(Min) + "～" + str(Max) + "度，" + CT + "\n\n"
+
+        sTime = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][2]["startTime"]
+        eTime = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][2]["endTime"]
+        Weather = json.loads(Data.text)["records"]["location"][0]["weatherElement"][0]["time"][2]["parameter"]["parameterName"]
+        Rain = json.loads(Data.text)["records"]["location"][0]["weatherElement"][1]["time"][2]["parameter"]["parameterName"]
+        Min = json.loads(Data.text)["records"]["location"][0]["weatherElement"][2]["time"][2]["parameter"]["parameterName"]
+        Max = json.loads(Data.text)["records"]["location"][0]["weatherElement"][4]["time"][2]["parameter"]["parameterName"]
+        CT = json.loads(Data.text)["records"]["location"][0]["weatherElement"][3]["time"][2]["parameter"]["parameterName"]
+        info += sTime + "～" + eTime + "\n"
+        info += Weather + "，降雨機率：" + str(Rain) + "%" + "，氣溫：" + str(Min) + "～" + str(Max) + "度，" + CT
+
+    return make_response(jsonify({"fulfillmentText": info}))
       
 
 
 
 if __name__ == "__main__": 
-    app.run(debug=True)
+    app.run()
