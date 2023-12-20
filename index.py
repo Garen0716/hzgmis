@@ -5,14 +5,11 @@ from firebase_admin import credentials, firestore
 import requests,json
 from bs4 import BeautifulSoup 
 
-from flask_ngrok import run_with_ngrok
-
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 app = Flask(__name__)
 db = firestore.client()
 
-run_with_ngrok(app)
 
 @app.route("/")
 def index():
@@ -323,4 +320,4 @@ def webhook6():
 
 
 if __name__ == "__main__": 
-    app.run()
+    app.run(debug=True)
